@@ -1,17 +1,22 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import os
 import sys
 
-sys.path.append("./BG_Prediction/shared_utilities")
+
+from jpformer_utilities.microscale_decoder import *
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(current_dir, "../../"))
+
+sys.path.append(os.path.join(PROJECT_ROOT, "shared_utilities"))
 from masking import *
 from encoder import *
 from attn import *
 from embed import *
 
-sys.path.append("./BG_Prediction/models/jpformer/jpformer_utilities")
-from microscale_decoder import *
+
 
 
 

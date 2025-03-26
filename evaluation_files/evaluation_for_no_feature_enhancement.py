@@ -3,25 +3,26 @@ import torch
 import numpy as np
 import json
 from torch.utils.data import DataLoader
-from models.utilities import BloodGlucoseDataset
 import os
+import sys
+
+from torch.utils.data import DataLoader
+from utilities import BloodGlucoseDataset
 from metrics import *
 
+current_dir = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(current_dir, "../"))
 
+sys.path.append(os.path.join(PROJECT_ROOT, "shared_utilities"))
+from metrics import *
+from utilities import *
+from cg_ega_loss_metric import P_EGA_Loss, R_EGA_Loss, CG_EGA_Loss
+# Set configuration file path
+config_path = os.path.join(PROJECT_ROOT, 'evaluation_files', 'evaluation_config_without_feature_enhancement.json')
 
-# Load config
-def load_config(config_path="/Users/josephpassant/DissertationRedo/Informer2020/models/evaluation_config_FE.json"):
-    with open(config_path, "r") as file:
-        return json.load(file)
-
-class ConfigObject:
-    def __init__(self, config_dict):
-        for key, value in config_dict.items():
-            setattr(self, key, value)
-
-config_dict = load_config()
+# Load configuration file
+config_dict = load_config(config_path)
 config = ConfigObject(config_dict)
-
 
 
 def get_cg_ega_mappings():
@@ -240,8 +241,6 @@ class ModelTester:
         detailed_df["dy_true_glucose"] = detailed_df["dy_true"] * config.std
         detailed_df["dy_pred_glucose"] = detailed_df["dy_pred"] * config.std
         
-        # Import necessary CG-EGA classes
-        from models.cg_ega_loss_metric import P_EGA_Loss, R_EGA_Loss, CG_EGA_Loss
         
         # Prepare lists to store classifications
         p_ega_classifications = []

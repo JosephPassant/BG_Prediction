@@ -17,24 +17,22 @@ from datetime import datetime
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(current_dir, "../../../../../"))
-
+PROJECT_ROOT = os.path.abspath(os.path.join(current_dir, "../../../"))
 
 sys.path.append(os.path.join(PROJECT_ROOT, "shared_utilities"))
 from utilities import *
-from rmse_training_validation_modules import *
+from dual_weighted_loss_training_validation_modules import *
 
 sys.path.append(os.path.join(PROJECT_ROOT, "evaluation_files"))
-from evaluation_for_feature_enhancement import *
+from evaluation_for_no_feature_enhancement import *
 
 sys.path.append(os.path.join(PROJECT_ROOT, "models/jpformer"))
 from jpformer import JPFormer
 
-# Set random seed for reproducibility
 
 
 # Set configuration file path
-config_path = os.path.join(PROJECT_ROOT, 'models', 'shared_config_files', 'base_training_config_with_feature_enhancement.json')
+config_path = os.path.join(PROJECT_ROOT, 'models', 'shared_config_files', 'base_training_config_without_feature_enhancement.json')
 
 # Load configuration file
 config_dict = load_config(config_path)
@@ -52,6 +50,7 @@ else:
     print("Using CPU")
 
 # Model setup
+
 model = JPFormer(
     enc_in=config.enc_in,
     dec_in=config.dec_in,
@@ -73,24 +72,24 @@ model = JPFormer(
     device=device
 ).float().to(device)
 
+# Debugging: Check model name
 model_name = model.__class__.__name__
 print(f"Initialized model: {model_name}")
-
+model_name = model.__class__.__name__
 
 # Data setup
-TRAIN_ENCODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_with_feature_enhancement_211_undersample/training/encoder_slices")
-TRAIN_DECODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_with_feature_enhancement_211_undersample/training/decoder_slices")
-TRAIN_TARGET_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_with_feature_enhancement_211_undersample/training/target_slices")
+TRAIN_ENCODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_no_feature_enhancement_211_undersample/training/encoder_slices")
+TRAIN_DECODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_no_feature_enhancement_211_undersample/training/decoder_slices")
+TRAIN_TARGET_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_no_feature_enhancement_211_undersample/training/target_slices")
 
-VAL_ENCODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_with_feature_enhancement_211_undersample/validation/encoder_slices")
-VAL_DECODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_with_feature_enhancement_211_undersample/validation/decoder_slices")
-VAL_TARGET_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_with_feature_enhancement_211_undersample/validation/target_slices")
+VAL_ENCODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_no_feature_enhancement_211_undersample/validation/encoder_slices")
+VAL_DECODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_no_feature_enhancement_211_undersample/validation/decoder_slices")
+VAL_TARGET_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_no_feature_enhancement_211_undersample/validation/target_slices")
 
 
-TEST_ENCODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_with_feature_enhancement_211_undersample/testing/encoder_slices")
-TEST_DECODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_with_feature_enhancement_211_undersample/testing/decoder_slices")
-TEST_TARGET_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_with_feature_enhancement_211_undersample/testing/target_slices")
-
+TEST_ENCODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_no_feature_enhancement_211_undersample/testing/encoder_slices")
+TEST_DECODER_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_no_feature_enhancement_211_undersample/testing/decoder_slices")
+TEST_TARGET_DIR = os.path.join(PROJECT_ROOT, "data/processed_data/replace_bg/baseline_no_feature_enhancement_211_undersample/testing/target_slices")
 
 # Training Data
 train_dataset = BloodGlucoseDataset(TRAIN_ENCODER_DIR, TRAIN_DECODER_DIR, TRAIN_TARGET_DIR)
@@ -114,19 +113,27 @@ total_steps = len(train_loader) * config.train_epochs
 lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, total_steps)
 
 
+
 if __name__ == "__main__":
 
-    model_type = "jpformer_feature_enhancement"
+    model_type = "jpformer_final_model_no_feature_enhancement_dual_weighted_loss"
+
+    ap_weight = 1.0
+    be_weight = 2.0
+    ep_weight = 6
+    hypo_multiplier = 2.0
+
+    weights_string = f"AP{ap_weight}_BE{be_weight}_EP{ep_weight}_Hypo{hypo_multiplier}"
+    model_name = f"{model_name}_{model_type}_{weights_string}"
 
     print("-------------Training-------------")
-    
-    save_dir = os.path.join(PROJECT_ROOT, "models", "jpformer", "development_training_files", "feature_enhancement", "with_feature_enhancement")
+
+    save_dir = os.path.join(PROJECT_ROOT, "models", "jpformer", "final_model_training_files")
     os.makedirs(save_dir, exist_ok=True)
 
-    best_model_path = train(train_iter, model, optimizer, lr_scheduler, config, train_loader= train_loader, val_loader= val_loader, save_dir= save_dir)
+    best_model_path  = train(train_iter, model, optimizer, lr_scheduler, config, ap_weight, be_weight, ep_weight, hypo_multiplier, train_loader= train_loader, val_loader= val_loader, save_dir= save_dir)
 
     print("\n-------------Testing-------------")
-    
     if best_model_path:
         model.load_state_dict(torch.load(best_model_path))
         print(f"Loaded best model from {best_model_path} for final testing.")
@@ -145,9 +152,10 @@ if __name__ == "__main__":
     if detailed_df is None or detailed_df.empty:
         print("ERROR: actual_predicted_dy_df is empty. Skipping save.")
     else:
-        detailed_df.to_csv(os.path.join(save_dir, "detailed_results_table.csv"), index=False)
-        print("Saved detailed_results_table.csv")
-    
+        detailed_df.to_csv(os.path.join(save_dir, "actual_and_predicted_values.csv"), index=False)
+        print("Saved actual_and_predicted_values.json")
+
+  
     # Save CG-EGA statistics
     overall_cg_ega_df = stats_tables["overall"]
     overall_cg_ega_df.to_csv(os.path.join(save_dir, "overall_cg_ega.csv"))
@@ -157,9 +165,9 @@ if __name__ == "__main__":
     for timepoint, df in stats_tables["timepoints"].items():
         df.to_csv(os.path.join(save_dir, f"cg_ega_stats_{timepoint}.csv"))
         print(f"Saved {timepoint} CG-EGA statistics")
-    
+
     # Save trained model
-    model_filename = f"{model_type}_{test_rmse:.4f}_MAE_{test_mae:.4f}.pth"
+    model_filename = f"{model_name}_{test_rmse:.4f}_MAE_{test_mae:.4f}.pth"
     model_path = os.path.join(save_dir, model_filename)
 
     if model.state_dict():
@@ -169,4 +177,3 @@ if __name__ == "__main__":
         print("ERROR: model.state_dict() is empty. Model not saved.")
 
     print(f"Model and results saved to {save_dir}/")
-

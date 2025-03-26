@@ -19,6 +19,7 @@ def validate(val_loader, model):
     total_rmse, total_mae = 0, 0
     all_outputs, all_targets = [], []
 
+    print("Running validation...")
     with torch.no_grad():
         for batch_x, batch_dec, batch_y in val_loader:
             batch_x, batch_dec, batch_y = batch_x.to(device), batch_dec.to(device), batch_y.to(device)

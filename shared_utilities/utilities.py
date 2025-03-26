@@ -3,6 +3,7 @@ import torch
 import random
 from torch.utils.data import Dataset, DataLoader
 from typing import Optional
+import json
 
 
 def create_dir(directory):
@@ -181,7 +182,7 @@ def compute_batch_derivatives(batch_values, interval=5):
     
     return derivatives
 
-def load_config(config_path=config_path):
+def load_config(config_path=None):
     # print(f"Attempting to load config from: {config_path}")  # Debugging print statement
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"Config file not found at: {config_path}")
