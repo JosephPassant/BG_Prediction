@@ -155,6 +155,7 @@ class BloodGlucoseDataset(Dataset):
 
         # No need to pass time features separately, already part of encoder_input & decoder_input
         return encoder_input, decoder_input, target
+    
        
 def compute_batch_derivatives(batch_values, interval=5):
     """
@@ -180,3 +181,23 @@ def compute_batch_derivatives(batch_values, interval=5):
     
     return derivatives
 
+def load_config(config_path=config_path):
+    # print(f"Attempting to load config from: {config_path}")  # Debugging print statement
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Config file not found at: {config_path}")
+    with open(config_path, "r") as file:
+        return json.load(file)
+
+class ConfigObject:
+    def __init__(self, config_dict):
+        for key, value in config_dict.items():
+            setattr(self, key, value)
+
+def create_dir(directory):
+    """
+    Safely creates a directory if it does not exist.
+    """
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    else:
+        print(f"Directory {directory} already exists.")

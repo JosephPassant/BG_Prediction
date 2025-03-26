@@ -112,25 +112,6 @@ filter_EP_hyper = [
 ]
 
 
-# def rmse(predictions, targets):
-#     """
-#     Computes RMSE loss.
-#     Ensures predictions and targets have the same shape.
-#     """
-#     print(f"Outputs Shape: {outputs.shape}")
-#     print(f"Targets Shape: {batch_y.shape}")
-#     return torch.sqrt(F.mse_loss(predictions.squeeze(-1), targets.squeeze(-1)))
-
-# def rmse(predictions, targets):
-#     """
-#     Computes RMSE loss.
-#     """
-#     # Ensure predictions and targets have shape [batch_size, seq_len]
-#     predictions = predictions.squeeze(-1)  # Removes last dimension (c_out=1)
-#     targets = targets.squeeze(-1) if targets.ndim == 3 else targets
-    
-#     return torch.sqrt(F.mse_loss(predictions, targets))
-
 def rmse(predictions, targets):
     # Ensure predictions and targets have the same shape
     if predictions.shape != targets.shape:

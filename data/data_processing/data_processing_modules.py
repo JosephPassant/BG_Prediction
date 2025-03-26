@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import xml.etree.ElementTree as ET
 
 
 def separate_ptid_data(df):
@@ -61,3 +62,60 @@ def get_first_file(directory, file_extension=".pt"):
     if files:
         return os.path.join(directory, files[0])
     return None
+
+
+OHIO_DATA_DIR = os.path.join('..', 'source_data', 'SourceData', 'Ohio')
+
+def get_ohio_data(dataset_type, data_dir_type, Ohio_data_dir = OHIO_DATA_DIR):
+
+    """
+    Function to parse the OhioT1DM dataset and return a dictionary of DataFrames for each patient.
+
+    Parameters:
+    data_type (str): Type of data to parse (e.g. 'training', 'validation', 'test')
+    data_dir (str): Directory containing the XML files, to be appended to the RAW_DATA_DIR
+
+    Returns:
+    data_dict (dict): Dictionary containing DataFrames for each patient, with PtID as the key
+    """
+
+    # Initialize dictionary to store DataFrames
+    data_dict = {}
+
+    # Directory containing the XML files
+    dir_path = os.path.join(OHIO_DATA_DIR, data_dir_type)
+
+    # Iterate through each file in the directory
+    for filename in os.listdir(dir_path):
+        if not filename.endswith('.xml'):
+            continue
+        
+        # Full path to the file
+        full_path = os.path.join(dir_path, filename)
+        
+        # Parse the XML file
+        tree = ET.parse(full_path)
+        root = tree.getroot()
+        data = []
+
+        # Extract Patient ID (as an integer)
+        PtID = int(root.attrib['id'])
+
+        # Extract glucose level events including timestamp and value
+        for event in root.find('glucose_level').findall('event'):
+            row = {'timestamp': event.attrib['ts'], 'value': event.attrib['value']}
+            data.append(row)
+
+        # Create a DataFrame for the patient
+        df = pd.DataFrame(data)
+        df['timestamp'] = pd.to_datetime(df['timestamp'], dayfirst=True)
+        df = df.sort_values(by='timestamp', ascending=True)
+
+        # Store the DataFrame in the dictionary with PtID as the key
+        data_dict[PtID] = df
+
+    # Label the dictionary based on the data type
+    dynamic_label = f"ohio_{dataset_type}_data"
+    globals()[dynamic_label] = data_dict  # Assign to global variable dynamically
+
+    return  data_dict  # Assign to global variable dynamically

@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 import numpy as np
 
 from math import sqrt
-from utils.masking import TriangularCausalMask, ProbMask
+from masking import TriangularCausalMask, ProbMask
 
 class FullAttention(nn.Module):
     def __init__(self, mask_flag=False, factor=5, scale=None, attention_dropout=0.1, output_attention=False):
